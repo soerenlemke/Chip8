@@ -29,7 +29,19 @@ public class MonoGameDisplay : IDisposable
             IsBackground = true
         };
         
-        _gameThread.SetApartmentState(ApartmentState.STA); // required on some platforms
+        try
+        {
+            _gameThread.SetApartmentState(ApartmentState.STA);
+        }
+        catch (PlatformNotSupportedException)
+        {
+            // Plattform unterstützt STA/COM nicht — ignorieren
+        }
+        catch (NotSupportedException)
+        {
+            // ältere Laufzeiten können NotSupportedException werfen
+        }
+
         _gameThread.Start();
         _started = true;
     }

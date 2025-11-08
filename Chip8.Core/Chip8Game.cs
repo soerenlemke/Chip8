@@ -86,9 +86,16 @@ public class Chip8Game : Game
         }
     }
 
+    // File: Chip8.Core/Chip8Game.cs (nachher)
     public void ClearTexture()
     {
+        if (_pixels == null)
+            _pixels = new Color[_width * _height];
+
         for (int i = 0; i < _pixels.Length; i++) _pixels[i] = Color.Black;
-        _texture?.SetData(_pixels);
+
+        if (_texture != null)
+            _texture.SetData(_pixels);
     }
+
 }

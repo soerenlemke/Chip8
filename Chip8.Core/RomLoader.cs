@@ -1,6 +1,6 @@
 namespace Chip8.Core;
 
-public class RomLoader
+public static class RomLoader
 {
     private const int LoadAddress = 0x200;
     

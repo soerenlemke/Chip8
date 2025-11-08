@@ -3,7 +3,6 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Chip8.Core;
 
-// MonoGame Game, verantwortlich für Rendering
 public class Chip8Game : Game
 {
     private readonly int _width;
@@ -15,7 +14,7 @@ public class Chip8Game : Game
     private Color[] _pixels;
     private readonly object _bufLock = new();
     private byte[]? _latestBuffer;
-    private volatile bool _running = false;
+    private volatile bool _running;
 
     public bool IsRunning => _running;
 
@@ -43,12 +42,6 @@ public class Chip8Game : Game
         _running = true;
     }
 
-    protected override void Update(GameTime gameTime)
-    {
-        // handle close via window events -> Game.Exit() is called by the wrapper or OS
-        base.Update(gameTime);
-    }
-
     protected override void Draw(GameTime gameTime)
     {
         lock (_bufLock)
@@ -56,7 +49,7 @@ public class Chip8Game : Game
             if (_latestBuffer != null)
             {
                 // convert byte[] (0/1 per pixel) to Color[]
-                for (int i = 0; i < _latestBuffer.Length && i < _pixels.Length; i++)
+                for (var i = 0; i < _latestBuffer.Length && i < _pixels.Length; i++)
                 {
                     var on = _latestBuffer[i] != 0;
                     _pixels[i] = on ? Color.White : Color.Black;
@@ -77,8 +70,9 @@ public class Chip8Game : Game
 
     public void SetBuffer(byte[] screen)
     {
-        if (screen == null) throw new ArgumentNullException(nameof(screen));
+        ArgumentNullException.ThrowIfNull(screen);
         if (screen.Length != _width * _height) throw new ArgumentException("screen buffer size mismatch");
+        
         lock (_bufLock)
         {
             // copy to avoid threading issues
@@ -86,7 +80,6 @@ public class Chip8Game : Game
         }
     }
 
-    // File: Chip8.Core/Chip8Game.cs (nachher)
     public void ClearTexture()
     {
         if (_pixels == null)

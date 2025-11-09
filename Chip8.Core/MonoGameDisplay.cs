@@ -4,12 +4,15 @@ public class MonoGameDisplay : IDisposable
 {
     private readonly Chip8Game _game;
     private readonly Thread _gameThread;
-    private volatile bool _started;
     private volatile bool _disposed;
+    private volatile bool _started;
 
     public MonoGameDisplay(int scale = 10, string title = "CHIP-8")
     {
         _game = new Chip8Game(64, 32, scale, title);
+
+        _game.Exiting += OnGameExiting;
+
         _gameThread = new Thread(() =>
         {
             try
@@ -28,7 +31,7 @@ public class MonoGameDisplay : IDisposable
         {
             IsBackground = true
         };
-        
+
         try
         {
             _gameThread.SetApartmentState(ApartmentState.STA);
@@ -46,17 +49,31 @@ public class MonoGameDisplay : IDisposable
         _started = true;
     }
 
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _game.Exiting -= OnGameExiting;
+
+        try
+        {
+            if (_game.IsRunning) _game.Exit();
+            if (_gameThread.IsAlive) _gameThread.Join(1000);
+        }
+        catch
+        {
+            // ignored
+        }
+    }
+
+    public event EventHandler? WindowClosed;
+
     public void UpdateFromBuffer(byte[] screen)
     {
         if (_disposed) throw new ObjectDisposedException(nameof(MonoGameDisplay));
         if (!_started) return;
         _game.SetBuffer(screen);
-    }
-
-    public bool PollEvents()
-    {
-        // returns false when window closed
-        return _game?.IsRunning ?? false;
     }
 
     public void Clear()
@@ -65,24 +82,9 @@ public class MonoGameDisplay : IDisposable
         _game.ClearTexture();
     }
 
-    public void Dispose()
+    private void OnGameExiting(object? sender, EventArgs e)
     {
-        if (_disposed) return;
-        _disposed = true;
-        try
-        {
-            if (_game.IsRunning)
-            {
-                _game.Exit();
-            }
-            if (_gameThread.IsAlive)
-            {
-                _gameThread.Join(1000);
-            }
-        }
-        catch
-        {
-            // ignored
-        }
+        _started = false;
+        WindowClosed?.Invoke(this, EventArgs.Empty);
     }
 }

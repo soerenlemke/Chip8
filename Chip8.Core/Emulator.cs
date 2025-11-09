@@ -3,9 +3,11 @@ namespace Chip8.Core;
 public class Emulator(Chip8 chip8)
 {
     private ushort _instruction;
+    private bool _windowClosed;
 
     public void Initialize(string romPath)
     {
+        chip8.Display.WindowClosed += OnWindowClosed;
         RomLoader.LoadRom(chip8, romPath);
     }
 
@@ -13,13 +15,19 @@ public class Emulator(Chip8 chip8)
     {
         // TODO: how can we make cycle time consistent?
         // TODO: how can we make cycle time configurable?
-        // TODO: stopping condition?
-        
-        while (true)
+
+        while (!_windowClosed)
         {
             Fetch();
             DecodeAndExecute();
         }
+
+        chip8.Display.WindowClosed -= OnWindowClosed;
+    }
+
+    private void OnWindowClosed(object? sender, EventArgs e)
+    {
+        _windowClosed = true;
     }
 
     // the instruction from memory at the current PC (program counter)
@@ -57,7 +65,7 @@ public class Emulator(Chip8 chip8)
         }
 
         // TODO: implement all opcodes
-        
+
         switch (firstNibble)
         {
             case 0x1: // 1NNN - JP addr
@@ -86,7 +94,7 @@ public class Emulator(Chip8 chip8)
                 throw new NotImplementedException($"unknown opcode: 0x{opcode:X4}");
         }
     }
-    
+
     private bool DrawSprite(int xReg, int yReg, int n)
     {
         var vx = chip8.Vx[xReg];

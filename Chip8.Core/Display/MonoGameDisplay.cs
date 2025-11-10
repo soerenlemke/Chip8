@@ -46,16 +46,17 @@ public sealed class MonoGameDisplay : Game, IDisplay
             IsBackground = true
         };
 
-        try
-        {
-            _gameThread.SetApartmentState(ApartmentState.STA);
-        }
-        catch (PlatformNotSupportedException)
-        {
-        }
-        catch (NotSupportedException)
-        {
-        }
+        if (OperatingSystem.IsWindows())
+            try
+            {
+                _gameThread.SetApartmentState(ApartmentState.STA);
+            }
+            catch (PlatformNotSupportedException)
+            {
+            }
+            catch (NotSupportedException)
+            {
+            }
 
         _gameThread.Start();
     }

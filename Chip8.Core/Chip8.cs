@@ -4,6 +4,7 @@ public class Chip8
 {
     public const int ScreenWidth = 64;
     public const int ScreenHeight = 32;
+    public const int LoadAddress = 0x200;
 
     private readonly byte[] _fontSet =
     [
@@ -40,8 +41,8 @@ public class Chip8
     public byte[] Memory { get; set; } = new byte[4096];
     public MonoGameDisplay Display { get; set; } // MonoGame-based display
     public byte[] Screen { get; set; } // 0/1 per pixel, row-major
-    public ushort Pc { get; set; } = 0x200; // Program counter
-    public ushort I { get; set; } = 0; // Index register
+    public ushort Pc { get; set; } = LoadAddress; // Program counter
+    public ushort I { get; set; } // Index register
     public byte DelayTimer { get; set; }
     public byte SoundTimer { get; set; }
     public byte[] Vx { get; set; } = new byte[16];

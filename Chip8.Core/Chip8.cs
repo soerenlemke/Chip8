@@ -1,3 +1,5 @@
+using Chip8.Core.Display;
+
 namespace Chip8.Core;
 
 public class Chip8(IDisplay display)
@@ -30,8 +32,6 @@ public class Chip8(IDisplay display)
 
     public void Initialize()
     {
-        Display = Display ?? throw new ArgumentNullException(nameof(display));
-        
         // Load fontset into memory starting at 0x50
         for (var i = 0; i < _fontSet.Length; i++) Memory[0x50 + i] = _fontSet[i];
 

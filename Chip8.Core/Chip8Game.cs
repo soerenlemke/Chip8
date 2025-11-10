@@ -90,5 +90,4 @@ public class Chip8Game : Game
         if (_texture != null)
             _texture.SetData(_pixels);
     }
-
 }

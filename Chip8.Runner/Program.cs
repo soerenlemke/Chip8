@@ -1,4 +1,5 @@
 ﻿using Chip8.Core;
+using Chip8.Core.Display;
 using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();

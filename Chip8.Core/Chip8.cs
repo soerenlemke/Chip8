@@ -40,7 +40,7 @@ public class Chip8(IDisplay display)
     }
 
     public byte[] Memory { get; set; } = new byte[4096];
-    public IDisplay Display { get; set; } = display; // MonoGame-based display
+    public IDisplay Display { get; set; } = display;
     public required byte[] Screen { get; set; } // 0/1 per pixel, row-major
     public ushort Pc { get; set; } = LoadAddress; // Program counter
     public ushort I { get; set; } // Index register

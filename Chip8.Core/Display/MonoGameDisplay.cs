@@ -1,72 +1,160 @@
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+
 namespace Chip8.Core.Display;
 
-public class MonoGameDisplay : IDisplay
+public sealed class MonoGameDisplay : Game, IDisplay
 {
-    private readonly Chip8Game _game;
+    private const int Width = 64;
+    private const int Height = 32;
+    private readonly Lock _bufLock = new();
+
     private readonly Thread _gameThread;
-    private volatile bool _started;
+    private readonly int _scale;
+    private volatile bool _disposed;
+    private volatile bool _isRunning;
+    private byte[]? _latestBuffer;
+    private Color[]? _pixels;
+    private SpriteBatch? _spriteBatch;
+    private Texture2D? _texture;
 
     public MonoGameDisplay(int scale = 10, string title = "CHIP-8")
     {
-        _game = new Chip8Game(64, 32, scale, title);
+        _scale = Math.Max(1, scale);
 
-        _game.Exiting += OnGameExiting;
+        var graphics = new GraphicsDeviceManager(this)
+        {
+            PreferMultiSampling = false
+        };
+        graphics.PreferredBackBufferWidth = Width * _scale;
+        graphics.PreferredBackBufferHeight = Height * _scale;
+
+        Window.Title = title;
 
         _gameThread = new Thread(() =>
         {
             try
             {
-                _game.Run();
+                Run();
             }
             catch (Exception)
             {
                 // swallow to avoid crashing host thread; inspect logs if needed
-            }
-            finally
-            {
-                _started = false;
             }
         })
         {
             IsBackground = true
         };
 
-        _gameThread.Start();
-        _started = true;
-    }
-
-    // Public Dispose: standard pattern
-    public void Dispose()
-    {
-        _game.Exiting -= OnGameExiting;
-
         try
         {
-            if (_game.IsRunning) _game.Exit();
-            if (_gameThread.IsAlive) _gameThread.Join(1000);
+            _gameThread.SetApartmentState(ApartmentState.STA);
         }
-        catch
+        catch (PlatformNotSupportedException)
         {
-            // ignored
         }
+        catch (NotSupportedException)
+        {
+        }
+
+        _gameThread.Start();
     }
+
+    public bool IsRunning => _isRunning;
 
     public event EventHandler? WindowClosed;
 
     public void UpdateFromBuffer(byte[] screen)
     {
-        if (!_started) return;
-        _game.SetBuffer(screen);
+        ArgumentNullException.ThrowIfNull(screen);
+        if (screen.Length != Width * Height) throw new ArgumentException("screen buffer size mismatch");
+
+        lock (_bufLock)
+        {
+            _latestBuffer = (byte[])screen.Clone();
+        }
     }
 
     public void Clear()
     {
-        _game.ClearTexture();
+        ClearTexture();
     }
 
-    private void OnGameExiting(object? sender, EventArgs e)
+    // Public Dispose: recommended pattern to satisfy CA1816
+    public new void Dispose()
     {
-        _started = false;
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected override void LoadContent()
+    {
+        _spriteBatch = new SpriteBatch(GraphicsDevice);
+        _texture = new Texture2D(GraphicsDevice, Width, Height, false, SurfaceFormat.Color);
+        _pixels = new Color[Width * Height];
+        ClearTexture();
+        base.LoadContent();
+        _isRunning = true;
+    }
+
+    protected override void OnExiting(object sender, ExitingEventArgs args)
+    {
+        _isRunning = false;
         WindowClosed?.Invoke(this, EventArgs.Empty);
+        base.OnExiting(sender, args);
+    }
+
+    protected override void Draw(GameTime gameTime)
+    {
+        lock (_bufLock)
+        {
+            if (_latestBuffer != null && _pixels != null && _texture != null)
+            {
+                for (var i = 0; i < _latestBuffer.Length && i < _pixels.Length; i++)
+                    _pixels[i] = _latestBuffer[i] != 0 ? Color.White : Color.Black;
+                _texture.SetData(_pixels);
+                _latestBuffer = null;
+            }
+        }
+
+        GraphicsDevice.Clear(Color.Black);
+
+        if (_spriteBatch != null && _texture != null)
+        {
+            _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            var dest = new Rectangle(0, 0, Width * _scale, Height * _scale);
+            _spriteBatch.Draw(_texture, dest, Color.White);
+            _spriteBatch.End();
+        }
+
+        base.Draw(gameTime);
+    }
+
+    private void ClearTexture()
+    {
+        _pixels ??= new Color[Width * Height];
+        for (var i = 0; i < _pixels.Length; i++) _pixels[i] = Color.Black;
+        _texture?.SetData(_pixels);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (_disposed) return;
+
+        if (disposing)
+            try
+            {
+                if (_isRunning) Exit();
+                if (_gameThread.IsAlive) _gameThread.Join(1000);
+                // Free managed resources created here if any
+                _texture?.Dispose();
+                _spriteBatch?.Dispose();
+            }
+            catch
+            {
+                // ignored
+            }
+
+        _disposed = true;
     }
 }

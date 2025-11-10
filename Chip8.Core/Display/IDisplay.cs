@@ -1,6 +1,6 @@
 namespace Chip8.Core.Display;
 
-public interface IDisplay
+public interface IDisplay : IDisposable
 { 
     void Dispose();
     event EventHandler? WindowClosed;

@@ -8,6 +8,7 @@ public class Emulator(Chip8 chip8)
     public void Initialize(string romPath)
     {
         chip8.Display.WindowClosed += OnWindowClosed;
+        chip8.Initialize();
         RomLoader.LoadRom(chip8, romPath);
     }
 

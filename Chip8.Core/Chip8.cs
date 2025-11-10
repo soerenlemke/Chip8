@@ -1,6 +1,6 @@
 namespace Chip8.Core;
 
-public class Chip8
+public class Chip8(IDisplay display)
 {
     public const int ScreenWidth = 64;
     public const int ScreenHeight = 32;
@@ -28,19 +28,20 @@ public class Chip8
 
     private int _stackPointer;
 
-    public Chip8()
+    public void Initialize()
     {
+        Display = Display ?? throw new ArgumentNullException(nameof(display));
+        
         // Load fontset into memory starting at 0x50
         for (var i = 0; i < _fontSet.Length; i++) Memory[0x50 + i] = _fontSet[i];
 
         // initialize display and screen buffer
         Screen = new byte[ScreenWidth * ScreenHeight];
-        Display = new MonoGameDisplay();
     }
 
     public byte[] Memory { get; set; } = new byte[4096];
-    public MonoGameDisplay Display { get; set; } // MonoGame-based display
-    public byte[] Screen { get; set; } // 0/1 per pixel, row-major
+    public IDisplay Display { get; set; } = display; // MonoGame-based display
+    public required byte[] Screen { get; set; } // 0/1 per pixel, row-major
     public ushort Pc { get; set; } = LoadAddress; // Program counter
     public ushort I { get; set; } // Index register
     public byte DelayTimer { get; set; }

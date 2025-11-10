@@ -1,10 +1,9 @@
 namespace Chip8.Core;
 
-public class MonoGameDisplay : IDisposable
+public class MonoGameDisplay : IDisplay
 {
     private readonly Chip8Game _game;
     private readonly Thread _gameThread;
-    private volatile bool _disposed;
     private volatile bool _started;
 
     public MonoGameDisplay(int scale = 10, string title = "CHIP-8")
@@ -32,28 +31,13 @@ public class MonoGameDisplay : IDisposable
             IsBackground = true
         };
 
-        try
-        {
-            _gameThread.SetApartmentState(ApartmentState.STA);
-        }
-        catch (PlatformNotSupportedException)
-        {
-            // Plattform unterstützt STA/COM nicht — ignorieren
-        }
-        catch (NotSupportedException)
-        {
-            // ältere Laufzeiten können NotSupportedException werfen
-        }
-
         _gameThread.Start();
         _started = true;
     }
 
+    // Public Dispose: standard pattern
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
-
         _game.Exiting -= OnGameExiting;
 
         try
@@ -71,14 +55,12 @@ public class MonoGameDisplay : IDisposable
 
     public void UpdateFromBuffer(byte[] screen)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(MonoGameDisplay));
         if (!_started) return;
         _game.SetBuffer(screen);
     }
 
     public void Clear()
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(MonoGameDisplay));
         _game.ClearTexture();
     }
 
